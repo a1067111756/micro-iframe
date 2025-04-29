@@ -1,7 +1,7 @@
 {
   "name": "micro-iframe",
   "license": "MIT",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "chengyu",
   "description": "a communication library for iframe-based micro-frontend integration",
   "type": "module",

@@ -68,3 +68,11 @@ export declare class MicroChildApp {
   // 发送消息
   $emit(appName: string, msgType: string, msgData: any): void
 }
+
+declare global {
+  interface Window {
+    microIframe?: MicroMainApp | MicroChildApp,
+    microMainIframe?: MicroMainApp
+    microChildIframe?: MicroChildApp
+  }
+}

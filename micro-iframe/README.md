@@ -157,4 +157,15 @@ ___
 - v0.0.2: 
   - 修复声明文件未导出问题
   - 添加日志打印开关
+- v0.0.3: 
+  - 优化全局对象window挂载声明问题
+  ``` typescript
+    declare global {
+      interface Window {
+        microIframe?: MicroMainApp | MicroChildApp,
+        microMainIframe?: MicroMainApp
+        microChildIframe?: MicroChildApp
+      }
+    }
+  ```
 ---
