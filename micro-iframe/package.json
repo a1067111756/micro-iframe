@@ -1,7 +1,7 @@
 {
   "name": "micro-iframe",
   "license": "MIT",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "author": "chengyu",
   "description": "a communication library for iframe-based micro-frontend integration",
   "type": "module",
@@ -32,7 +32,7 @@
   "scripts": {
     "build-types": "node ./types-excutor.mjs",
     "dev": "rollup -wc rollup.config.dev.js",
-    "prod": "rollup -c rollup.config.prod.js && npm run build-types"
+    "prod": "rollup -c rollup.config.prod.js & npm run build-types"
   },
   "peerDependencies": {
     "mitt": "^3.0.1"

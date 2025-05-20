@@ -168,4 +168,47 @@ ___
       }
     }
   ```
+- v0.0.5:
+  - 修复在同一域名下不同二级子目录部署的多个子应用通信失效问题
+  ``` typescript
+    如果项目部署结构如下:
+      主应用(http://www.xxx.cn/main-app/)
+        ├── 子应用1（http://www.xxx.cn/child-app1/）
+        ├── 子应用2（http://www.xxx.cn/child-app2/）
+        ├── 子应用3（http://www.xxx.cn/child-app3/）
+        └── 子应用4（http://www.xxx.cn/child-app4/）
+     注意：多个项目如果是在相同域名下，只是二级地址不一样，origin参数是一样的，因为iframe的origin指的是域名+端口，不包括二级地址
+
+    window.microIframe = new MicroMainApp('MAIN_APP', {
+      name: 'MAIN_APP',
+      iframeId: 'main-app',
+      origin: 'http://www.xxx.cn',
+      children: [
+        {
+          name: 'CHILD_APP1',
+          iframeId: 'child-app1',
+          origin: 'http://www.xxx.cn',
+          children: [
+            {
+              name: 'CHILD_APP3',
+              iframeId: 'child-app3',
+              origin: 'http://www.xxx.cn',
+            }
+          ]
+        },
+        {
+          name: 'CHILD_APP2',
+          iframeId: 'child-app2',
+          origin: 'http://www.xxx.cn',
+          children: [
+            {
+              name: 'CHILD_APP4',
+              iframeId: 'child-app4',
+              origin: 'http://www.xxx.cn'
+            }
+          ]
+        },
+      ]
+    })
+  ```
 ---

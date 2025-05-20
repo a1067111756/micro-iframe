@@ -42,7 +42,7 @@ export default class MicroMainApp {
     // 找到当前路由信息
     const match = micro_iframe_routes.find(it => it.name === microName)
     if (!match) {
-      throw new Error(`[micro-iframe] ${this.MICRO_IFRAME_NAME}应用: ${microName} 在路由表中未找到匹配项, 请检查注册应用名称和路由表是否匹配`)
+      throw new Error(`[micro-iframe]-[${this.MICRO_IFRAME_NAME}]应用: ${microName} 在路由表中未找到匹配项, 请检查注册应用名称和路由表是否匹配`)
     }
 
     // 赋值路由表
@@ -70,14 +70,14 @@ export default class MicroMainApp {
     // 查找目标应用路由
     const targetAppRoute = this.MICRO_IFRAME_ROUTES.find(it => it.name === message.targetApp)
     if (!targetAppRoute) {
-      this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe] ${this.MICRO_IFRAME_NAME}应用: 转发消息, 消息目标应用${message.targetApp}未在路由表中注册，发送失败`)
+      this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe]-[${this.MICRO_IFRAME_NAME}]应用: 转发消息, 消息目标应用${message.targetApp}未在路由表中注册，发送失败`)
       return
     }
 
     // 转发的下一个子应用名称
     const curNodeIndex = targetAppRoute.keyPath.findIndex(it => it === this.MICRO_IFRAME_NAME)
     if (curNodeIndex === -1 || curNodeIndex + 1 >= targetAppRoute.keyPath.length) {
-      this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe] ${this.MICRO_IFRAME_NAME}应用: 转发消息, 消息中间应用节点未找到，发送失败`)
+      this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe]-[${this.MICRO_IFRAME_NAME}]应用: 转发消息, 消息中间应用节点未找到，发送失败`)
       return
     }
 
@@ -85,7 +85,7 @@ export default class MicroMainApp {
     const nextNodeAppName = targetAppRoute.keyPath[curNodeIndex + 1]
     const nextNodeAppRoute = this.MICRO_IFRAME_ROUTES.find(it => it.name === nextNodeAppName)
     if (!nextNodeAppRoute) {
-      this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe] ${this.MICRO_IFRAME_NAME}应用: 转发消息, 消息中间应用${nextNodeAppName}未在路由表中注册，发送失败`)
+      this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe]-[${this.MICRO_IFRAME_NAME}]应用: 转发消息, 消息中间应用${nextNodeAppName}未在路由表中注册，发送失败`)
       return
     }
 
@@ -94,34 +94,45 @@ export default class MicroMainApp {
     if (targetWindow) {
       targetWindow.postMessage(message, nextNodeAppRoute.origin)
     } else {
-      this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe] ${this.MICRO_IFRAME_NAME}应用: 转发消息, 消息中间应用目标窗口: ${nextNodeAppRoute.iframeId}未找到, 发送失败`)
+      this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe]-[${this.MICRO_IFRAME_NAME}]应用: 转发消息, 消息中间应用目标窗口: ${nextNodeAppRoute.iframeId}未找到, 发送失败`)
     }
+  }
+
+  // 方法 - 检查消息是否来自有效域名(即在路由表中, 来自有效域名，来自有效App名称)
+  __checkMessageIsValid (event: MessageEvent) {
+    // 检查 - 消息格式是否符合，如果type不符合规则，表明不是MIC_IFRAME的消息，不进行处理
+    if (!MessageEntity.isValid(event?.data || {})) {
+      this.MICRO_IFRAME_OPTIONS.log && console.warn(`[micro-iframe]-[${this.MICRO_IFRAME_NAME}]应用: 接收到消息不符合micro-iframe规则, 该消息被丢弃`, event)
+      return
+    }
+
+    // 检查 - 来自有效域名，来自有效App名
+    const match = this.MICRO_IFRAME_ROUTES.find(it => it.name === event.data.fromApp)
+    if (!match) {
+      this.MICRO_IFRAME_OPTIONS.log && console.warn(`[micro-iframe]-[${this.MICRO_IFRAME_NAME}]应用: 接收到未在路由表注册消息，该消息被丢弃`, event)
+      return false
+    }
+
+    return true
   }
 
   // 方法 - 初始化
   __init () {
     // 监听消息
     window.addEventListener('message', (event: MessageEvent) => {
+      this.MICRO_IFRAME_OPTIONS.log && console.log(`[micro-iframe]-[${this.MICRO_IFRAME_NAME}]应用接收到消息:`, event)
+
+      // 检查 - 消息是否有效
+      if (!this.__checkMessageIsValid(event)) {
+        return
+      }
+
       // 接收到的消息
       const receivedMessage = new MessageEntity(event?.data || {})
-
-      // 如果type不符合规则，表明不是MIC_IFRAME的消息，不进行处理
-      if (!MessageEntity.isValid(receivedMessage)) {
-        this.MICRO_IFRAME_OPTIONS.log && console.warn(`[micro-iframe] ${this.MICRO_IFRAME_NAME}应用: 接收到消息不符合micro-iframe规则, 该消息被丢弃`)
-        this.MICRO_IFRAME_OPTIONS.log && console.warn(event)
-        return
-      }
-
-      // 检查 - 消息是否来自有效域名(即在路由表中)
-      const fromAppRoute = this.MICRO_IFRAME_ROUTES.find(it => it.origin === event.origin)
-      if (!fromAppRoute) {
-        this.MICRO_IFRAME_OPTIONS.log && console.warn(`[micro-iframe] ${this.MICRO_IFRAME_NAME}应用: 接收到未在路由表注册域名消息，该消息被丢弃`)
-        this.MICRO_IFRAME_OPTIONS.log && console.warn(event)
-        return
-      }
-
+ 
       // 第一种情况 - 消息类型是握手信息，子应用请求注册配置
       if (receivedMessage.type === MicroMainApp.MICRO_IFRAME_EVENT.INIT_REQUEST_CONFIG) {
+        const fromAppRoute = this.MICRO_IFRAME_ROUTES.find(it => it.name === event.data.fromApp) as any
         this.__handleIframeInitRequestConfigMessage(fromAppRoute)
         return
       }
@@ -147,7 +158,7 @@ export default class MicroMainApp {
     // 检查 - 消息发送地址APP是否有效(即在路由表中)
     const targetAppRoute = this.MICRO_IFRAME_ROUTES.find(it => it.name === appName)
     if (!targetAppRoute) {
-      this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe] ${this.MICRO_IFRAME_NAME}应用: 发送消息, 目应用${appName}在路由表中未注册, 发送失败`)
+      this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe]-[${this.MICRO_IFRAME_NAME}]应用: 发送消息, 目应用${appName}在路由表中未注册, 发送失败`)
       return
     }
 
@@ -159,7 +170,7 @@ export default class MicroMainApp {
       if (targetWindow) {
         targetWindow.postMessage(message, targetAppRoute.origin)
       } else {
-        this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe] ${this.MICRO_IFRAME_NAME}应用: 发送消息, 目标应用${appName}的窗口${targetAppRoute.iframeId}未找到, 发送失败`)
+        this.MICRO_IFRAME_OPTIONS.log && console.error(`[micro-iframe]-[${this.MICRO_IFRAME_NAME}]应用: 发送消息, 目标应用${appName}的窗口${targetAppRoute.iframeId}未找到, 发送失败`)
       }
 
       return
